@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Mozart.Play.Common;
+using Mozart.Play.Inventory.Service.Clients;
 using Mozart.Play.Inventory.Service.Entities;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -11,10 +12,12 @@ namespace Mozart.Play.Inventory.Service.Controllers
     public class ItemsController : ControllerBase
     {
         private readonly IRepository<InventoryItem> _itemsRepository;
+        private readonly CatalogClient _catalogClient;
 
-        public ItemsController(IRepository<InventoryItem> itemsRepository)
+        public ItemsController(IRepository<InventoryItem> itemsRepository, CatalogClient catalogClient)
         {
             _itemsRepository = itemsRepository;
+            _catalogClient = catalogClient;
         }
 
         // GET: api/items
@@ -26,17 +29,17 @@ namespace Mozart.Play.Inventory.Service.Controllers
                 return BadRequest();
             }
 
-            var result = (await _itemsRepository.GetManyAsync(q => q.UserId == userId))
-                        .Select(q => q.AsDto());
+            var catalogItems = await _catalogClient.GetCatalogItemsAsync();
+            var inventoryItemEntities = await _itemsRepository.GetManyAsync(q => q.UserId == userId);
+
+            var result = inventoryItemEntities.Select(inventoryItem =>
+            {
+                var catalogItem = catalogItems.Single(catalogItem => catalogItem.Id == inventoryItem.CatalogItemId);
+                return inventoryItem.AsDto(catalogItem.Name, catalogItem.Description);
+            });
+
 
             return Ok(result);
-        }
-
-        // GET api/items/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
         }
 
         // POST api/items
@@ -64,18 +67,6 @@ namespace Mozart.Play.Inventory.Service.Controllers
             }
 
             return Ok();
-        }
-
-        // PUT api/items/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/items/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
         }
     }
 }

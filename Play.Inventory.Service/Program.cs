@@ -1,5 +1,6 @@
 ﻿using Mozart.Play.Common.MongoDb;
 using Mozart.Play.Common.Settings;
+using Mozart.Play.Inventory.Service.Clients;
 using Mozart.Play.Inventory.Service.Entities;
 
 namespace Mozart.Play.Inventory.Service;
@@ -17,6 +18,11 @@ public class Program
 
         builder.Services.AddMongo();
         builder.Services.AddMongoRepository<InventoryItem>("inventory.items");
+
+        builder.Services.AddHttpClient<CatalogClient>(client =>
+        {
+            client.BaseAddress = new Uri("https://localhost:7273");
+        });
 
         builder.Services.AddControllers(options =>
         {
