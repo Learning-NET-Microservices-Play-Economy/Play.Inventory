@@ -3,6 +3,7 @@ using Mozart.Play.Common.Settings;
 using Mozart.Play.Inventory.Service.Clients;
 using Mozart.Play.Inventory.Service.Entities;
 using Polly;
+using Polly.Timeout;
 
 namespace Mozart.Play.Inventory.Service;
 
@@ -20,10 +21,21 @@ public class Program
         builder.Services.AddMongo();
         builder.Services.AddMongoRepository<InventoryItem>("inventory.items");
 
+        Random jitterer = new Random();
+
         builder.Services.AddHttpClient<CatalogClient>(client =>
         {
             client.BaseAddress = new Uri("https://localhost:7273");
         })
+        .AddTransientHttpErrorPolicy(builder =>
+            builder.Or<TimeoutRejectedException>().WaitAndRetryAsync(
+                5,
+                retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + TimeSpan.FromMilliseconds(jitterer.Next(0, 1000)),
+                onRetry: (outcome, timeSpan, retryAttempt) =>
+                {
+                    // do dome logging here
+                })
+        )
         .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(1));
 
         builder.Services.AddControllers(options =>
