@@ -9,12 +9,16 @@
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'Play.Inventory.Service' " />
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+    <PackageReference Include="Mozart.Play.Common" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="Controllers\" />
+    <None Remove="Mozart.Play.Common" />
+    <None Remove="Entities\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Controllers\" />
+    <Folder Include="Entities\" />
   </ItemGroup>
 </Project>
