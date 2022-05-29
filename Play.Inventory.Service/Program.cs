@@ -2,6 +2,7 @@
 using Mozart.Play.Common.Settings;
 using Mozart.Play.Inventory.Service.Clients;
 using Mozart.Play.Inventory.Service.Entities;
+using Polly;
 
 namespace Mozart.Play.Inventory.Service;
 
@@ -22,7 +23,8 @@ public class Program
         builder.Services.AddHttpClient<CatalogClient>(client =>
         {
             client.BaseAddress = new Uri("https://localhost:7273");
-        });
+        })
+        .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(1));
 
         builder.Services.AddControllers(options =>
         {
