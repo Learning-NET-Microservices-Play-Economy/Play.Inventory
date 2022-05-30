@@ -11,13 +11,13 @@ namespace Mozart.Play.Inventory.Service.Controllers
     [Route("[controller]")]
     public class ItemsController : ControllerBase
     {
-        private readonly IRepository<InventoryItem> _itemsRepository;
-        private readonly CatalogClient _catalogClient;
+        private readonly IRepository<InventoryItem> _inventoryItemsRepository;
+        private readonly IRepository<CatalogItem> _catalogItemRepository;
 
-        public ItemsController(IRepository<InventoryItem> itemsRepository, CatalogClient catalogClient)
+        public ItemsController(IRepository<InventoryItem> inventoryItemsRepository, IRepository<CatalogItem> catalogItemRepository)
         {
-            _itemsRepository = itemsRepository;
-            _catalogClient = catalogClient;
+            _inventoryItemsRepository = inventoryItemsRepository;
+            _catalogItemRepository = catalogItemRepository;
         }
 
         // GET: api/items
@@ -29,12 +29,14 @@ namespace Mozart.Play.Inventory.Service.Controllers
                 return BadRequest();
             }
 
-            var catalogItems = await _catalogClient.GetCatalogItemsAsync();
-            var inventoryItemEntities = await _itemsRepository.GetManyAsync(q => q.UserId == userId);
+            var inventoryItemEntities = await _inventoryItemsRepository.GetManyAsync(q => q.UserId == userId);
+            var itemIds = inventoryItemEntities.Select(q => q.CatalogItemId);
+
+            var catalogItemEntities = await _catalogItemRepository.GetManyAsync(q => itemIds.Contains(q.Id));
 
             var result = inventoryItemEntities.Select(inventoryItem =>
             {
-                var catalogItem = catalogItems.Single(catalogItem => catalogItem.Id == inventoryItem.CatalogItemId);
+                var catalogItem = catalogItemEntities.Single(catalogItem => catalogItem.Id == inventoryItem.CatalogItemId);
                 return inventoryItem.AsDto(catalogItem.Name, catalogItem.Description);
             });
 
@@ -46,7 +48,7 @@ namespace Mozart.Play.Inventory.Service.Controllers
         [HttpPost]
         public async Task<ActionResult> Post([FromBody] GrantItemsDto body)
         {
-            var existing = await _itemsRepository.GetAsync(q => q.UserId == body.userId && q.CatalogItemId == body.CatalogItemId);
+            var existing = await _inventoryItemsRepository.GetAsync(q => q.UserId == body.userId && q.CatalogItemId == body.CatalogItemId);
 
             if (existing == null)
             {
@@ -58,12 +60,12 @@ namespace Mozart.Play.Inventory.Service.Controllers
                     AcquiredDate = DateTimeOffset.UtcNow
                 };
 
-                await _itemsRepository.CreateAsync(existing);
+                await _inventoryItemsRepository.CreateAsync(existing);
             }
             else
             {
                 existing.Quantity += body.Quantity;
-                await _itemsRepository.UpdateAsync(existing);
+                await _inventoryItemsRepository.UpdateAsync(existing);
             }
 
             return Ok();
