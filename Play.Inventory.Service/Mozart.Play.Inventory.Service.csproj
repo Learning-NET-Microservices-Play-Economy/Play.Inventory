@@ -8,7 +8,7 @@
 
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'Play.Inventory.Service' " />
   <ItemGroup>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />
     <PackageReference Include="Mozart.Play.Common" Version="1.0.1" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="6.0.5" />
   </ItemGroup>
