@@ -1,4 +1,5 @@
-﻿using Mozart.Play.Common.MongoDb;
+﻿using Mozart.Play.Common.MassTransit;
+using Mozart.Play.Common.MongoDb;
 using Mozart.Play.Inventory.Service.Clients;
 using Mozart.Play.Inventory.Service.Entities;
 using Polly;
@@ -14,9 +15,43 @@ public class Program
         var services = builder.Services;
 
         // Add services to the container.
-        services.AddMongo();
-        services.AddMongoRepository<InventoryItem>("inventory.items");
+        services.AddMongo()
+                .AddMongoRepository<InventoryItem>("inventory.items")
+                .AddMongoRepository<CatalogItem>("catalog.items")
+                .AddMassTransitWithRabbitMQ();
 
+        AddCatalogClient(services);
+
+        services.AddControllers(options =>
+        {
+            options.SuppressAsyncSuffixInActionNames = false;
+        });
+
+        services.AddControllers();
+        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen();
+
+        var app = builder.Build();
+
+        // Configure the HTTP request pipeline.
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        app.UseHttpsRedirection();
+
+        app.UseAuthorization();
+
+        app.MapControllers();
+
+        app.Run();
+    }
+
+    private static void AddCatalogClient(IServiceCollection services)
+    {
         Random jitterer = new Random();
 
         services.AddHttpClient<CatalogClient>(client =>
@@ -53,33 +88,6 @@ public class Program
             )
         )
         .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(1));
-
-        services.AddControllers(options =>
-        {
-            options.SuppressAsyncSuffixInActionNames = false;
-        });
-
-        services.AddControllers();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen();
-
-        var app = builder.Build();
-
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
-
-        app.UseHttpsRedirection();
-
-        app.UseAuthorization();
-
-        app.MapControllers();
-
-        app.Run();
     }
 }
 
