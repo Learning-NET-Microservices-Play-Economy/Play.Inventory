@@ -9,10 +9,13 @@ namespace Mozart.Play.Inventory.Service;
 
 public class Program
 {
+    private const string AllowedOriginSetting = "AllowedOrigin";
+
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         var services = builder.Services;
+        var configuration = builder.Configuration;
 
         // Add services to the container.
         services.AddMongo()
@@ -39,6 +42,13 @@ public class Program
         {
             app.UseSwagger();
             app.UseSwaggerUI();
+
+            app.UseCors(builder =>
+            {
+                builder.WithOrigins(configuration[AllowedOriginSetting])
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+            });
         }
 
         app.UseHttpsRedirection();
